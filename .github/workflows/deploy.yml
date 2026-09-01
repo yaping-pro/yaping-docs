@@ -32,25 +32,18 @@ jobs:
           hugo-version: '0.165.0'
           extended: true
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Build Production Static Site
         run: hugo --gc --minify --environment production --printPathWarnings
 
-      - name: Deploy via LFTP (FTPS High-Speed Sync)
+      - name: Deploy to MatrixIDC via FTPS
         env:
           FTP_HOST: 186.241.115.49
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -qq lftp
-          lftp -e "
-            set ssl:verify-certificate no;
-            set ftp:ssl-allow yes;
-            set ftp:ssl-force yes;
-            set ftp:ssl-protect-data yes;
-            set ftp:passive-mode yes;
-            set net:timeout 15;
-            set net:max-retries 3;
-            mirror -R -e -p -v --parallel=5 ./public/ ./;
-            quit
-          " -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
+          python3 scripts/deploy.py ./public /public_html
