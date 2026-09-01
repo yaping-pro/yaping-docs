@@ -5,11 +5,12 @@ import ssl
 import ftplib
 from pathlib import Path
 
-# Fix TLS session resumption for FTPS data connection
 class SSLSessionReuseFTP(ftplib.FTP_TLS):
-    def ntransfercmd(self, cmd, rest=None):
-        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
-        if self._cnx:
+    """Custom FTP_TLS implementation that reuses TLS session on data socket."""
+    
+    def ntransfercmd(self, cmd: str, rest: int | str | None = None):
+        conn, size = super().ntransfercmd(cmd, rest)
+        if isinstance(self.sock, ssl.SSLSocket) and self.sock.session is not None:
             conn = self.context.wrap_socket(
                 conn,
                 server_hostname=self.host,
@@ -17,14 +18,14 @@ class SSLSessionReuseFTP(ftplib.FTP_TLS):
             )
         return conn, size
 
-def upload_directory(ftp, local_dir, remote_dir):
+def upload_directory(ftp: ftplib.FTP, local_dir: str, remote_dir: str) -> None:
     local_path = Path(local_dir)
     print(f"[*] Starting upload from {local_path} to {remote_dir}")
     
     file_count = 0
     dir_count = 0
 
-    for root, dirs, files in os.walk(local_path):
+    for root, _, files in os.walk(local_path):
         rel_path = Path(root).relative_to(local_path)
         current_remote_dir = (Path(remote_dir) / rel_path).as_posix()
         
@@ -32,7 +33,6 @@ def upload_directory(ftp, local_dir, remote_dir):
         try:
             ftp.cwd(current_remote_dir)
         except ftplib.error_perm:
-            # Create directories recursively
             parts = current_remote_dir.strip("/").split("/")
             path_builder = ""
             for part in parts:
@@ -56,7 +56,7 @@ def upload_directory(ftp, local_dir, remote_dir):
 
     print(f"[✓] Upload complete! Total files: {file_count}, directories created: {dir_count}")
 
-def main():
+def main() -> None:
     host = os.environ.get("FTP_HOST", "186.241.115.49")
     user = os.environ.get("FTP_USER")
     passwd = os.environ.get("FTP_PASS")
@@ -77,13 +77,13 @@ def main():
     print("    [+] Handshake connected. Authenticating...")
     ftp.auth()
     ftp.login(user, passwd)
-    ftp.prot_p()  # Enforce encrypted data connection
+    ftp.prot_p()
     ftp.set_pasv(True)
     print("    [+] Authentication successful!")
 
-    # Check remote root listing
+    # Check remote root layout
     print("    [+] Remote root layout:")
-    lines = []
+    lines: list[str] = []
     ftp.dir(lines.append)
     for l in lines[:5]:
         print(f"        {l}")
