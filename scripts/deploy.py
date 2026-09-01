@@ -3,7 +3,6 @@ import os
 import sys
 import ssl
 import ftplib
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 import threading
@@ -32,87 +31,33 @@ def get_thread_ftp(host: str, user: str, passwd: str) -> ftplib.FTP_TLS:
         thread_local.ftp = ftp
     return thread_local.ftp
 
-def probe_and_find_webroot(host: str, user: str, passwd: str, domain: str) -> str:
-    """Drop probe files in candidate directories to find the exact Nginx webroot."""
-    candidates = [
-        "/public_html",
-        f"/{domain}",
-        f"/public_html/{domain}",
-        "/public_html/docs",
-        "/docs",
-        "/wwwroot",
-        f"/wwwroot/{domain}",
-        f"/public_html/yaping.dpdns.org"
-    ]
-    
-    print(f"[*] Probing {len(candidates)} candidate webroots for {domain}...")
-    ftp = get_thread_ftp(host, user, passwd)
-    
-    for cand in candidates:
-        try:
-            # Try creating directory if not present
-            parts = cand.strip("/").split("/")
-            b = ""
-            for p in parts:
-                b += f"/{p}"
-                try:
-                    ftp.mkd(b)
-                except ftplib.error_perm:
-                    pass
-            ftp.cwd(cand)
-            # Write probe file
-            probe_content = f"PROBE_OK:{cand}".encode("utf-8")
-            from io import BytesIO
-            ftp.storbinary("STOR probe.txt", BytesIO(probe_content))
-            print(f"    [+] Dropped probe in {cand}")
-        except Exception as e:
-            print(f"    [-] Failed to drop probe in {cand}: {e}")
-
-    # Now probe via HTTP
-    print(f"[*] Querying http://{host}/probe.txt with Host: {domain}...")
-    for cand in candidates:
-        try:
-            req = urllib.request.Request(
-                f"http://{host}/probe.txt",
-                headers={"Host": domain, "User-Agent": "ProbeClient/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status == 200:
-                    text = resp.read().decode("utf-8").strip()
-                    if text.startswith("PROBE_OK:"):
-                        matched_path = text.split("PROBE_OK:")[1]
-                        print(f"\n[🎯 FOUND EXACT WEBROOT]: {matched_path}\n")
-                        return matched_path
-        except Exception as e:
-            pass
-
-    print("[!] Probe via HTTP didn't match probe.txt, defaulting to /public_html")
-    return "/public_html"
-
 def upload_single_file(host: str, user: str, passwd: str, local_path: Path, remote_dir: str) -> bool:
     ftp = get_thread_ftp(host, user, passwd)
     filename = local_path.name
     
+    clean_remote_dir = remote_dir if remote_dir else "/"
     try:
-        ftp.cwd(remote_dir)
+        ftp.cwd(clean_remote_dir)
     except ftplib.error_perm:
-        parts = remote_dir.strip("/").split("/")
+        parts = clean_remote_dir.strip("/").split("/")
         builder = ""
         for p in parts:
+            if not p:
+                continue
             builder += f"/{p}"
             try:
                 ftp.mkd(builder)
             except ftplib.error_perm:
                 pass
-        ftp.cwd(remote_dir)
+        ftp.cwd(clean_remote_dir)
 
     with open(local_path, "rb") as f:
         ftp.storbinary(f"STOR {filename}", f)
     return True
 
-def deploy_parallel(host: str, user: str, passwd: str, local_dir: str, remote_dir: str, workers: int = 10) -> None:
+def deploy_to_target(host: str, user: str, passwd: str, local_dir: str, remote_dir: str, workers: int = 8) -> None:
     local_path = Path(local_dir)
-    print(f"[*] Scanning local files in {local_path}...")
+    print(f"[*] Scanning local files in {local_path} for target {remote_dir}...")
     
     files_to_upload: list[tuple[Path, str]] = []
     for root, _, files in os.walk(local_path):
@@ -120,7 +65,7 @@ def deploy_parallel(host: str, user: str, passwd: str, local_dir: str, remote_di
         if rel == Path("."):
             rem_dir = remote_dir
         else:
-            rem_dir = f"{remote_dir}/{rel.as_posix()}"
+            rem_dir = f"{remote_dir}/{rel.as_posix()}" if remote_dir != "/" else f"/{rel.as_posix()}"
         for f in files:
             files_to_upload.append((Path(root) / f, rem_dir))
 
@@ -137,8 +82,6 @@ def deploy_parallel(host: str, user: str, passwd: str, local_dir: str, remote_di
             try:
                 _ = future.result()
                 completed += 1
-                if completed % 30 == 0 or completed == total:
-                    print(f"    [+] Uploaded {completed}/{total} files ({(completed/total)*100:.1f}%)...")
             except Exception as e:
                 f_path = futures[future]
                 print(f"    [!] Error uploading {f_path}: {e}")
@@ -149,7 +92,6 @@ def main() -> None:
     host = os.environ.get("FTP_HOST", "186.241.115.49")
     user = os.environ.get("FTP_USER")
     passwd = os.environ.get("FTP_PASS")
-    domain = os.environ.get("DOMAIN", "docs.yaping.dpdns.org")
     local_dir = sys.argv[1] if len(sys.argv) > 1 else "./public"
 
     if not user or not passwd:
@@ -157,8 +99,9 @@ def main() -> None:
         sys.exit(1)
 
     print(f"[*] Connecting to FTPS server {host}...")
-    matched_webroot = probe_and_find_webroot(host, user, passwd, domain)
-    deploy_parallel(host, user, passwd, local_dir, matched_webroot, workers=8)
+    # Deploy to both /public_html and / root
+    deploy_to_target(host, user, passwd, local_dir, "/public_html", workers=8)
+    deploy_to_target(host, user, passwd, local_dir, "/", workers=8)
 
 if __name__ == "__main__":
     main()
