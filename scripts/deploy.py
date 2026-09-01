@@ -5,20 +5,7 @@ import ssl
 import ftplib
 from pathlib import Path
 
-class SSLSessionReuseFTP(ftplib.FTP_TLS):
-    """Custom FTP_TLS implementation that reuses TLS session on data socket."""
-    
-    def ntransfercmd(self, cmd: str, rest: int | str | None = None):
-        conn, size = super().ntransfercmd(cmd, rest)
-        if isinstance(self.sock, ssl.SSLSocket) and self.sock.session is not None:
-            conn = self.context.wrap_socket(
-                conn,
-                server_hostname=self.host,
-                session=self.sock.session
-            )
-        return conn, size
-
-def upload_directory(ftp: ftplib.FTP, local_dir: str, remote_dir: str) -> None:
+def upload_directory(ftp: ftplib.FTP_TLS, local_dir: str, remote_dir: str) -> None:
     local_path = Path(local_dir)
     print(f"[*] Starting upload from {local_path} to {remote_dir}")
     
@@ -72,7 +59,7 @@ def main() -> None:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    ftp = SSLSessionReuseFTP(context=ctx, timeout=30)
+    ftp = ftplib.FTP_TLS(context=ctx, timeout=30)
     ftp.connect(host, 21)
     print("    [+] Handshake connected. Authenticating...")
     ftp.auth()
