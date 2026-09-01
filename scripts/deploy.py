@@ -28,6 +28,42 @@ def create_ftps_client(host: str, user: str, passwd: str) -> ftplib.FTP_TLS:
     ftp.set_pasv(True)
     return ftp
 
+def find_target_directories(ftp: ftplib.FTP_TLS) -> list[str]:
+    """Scan FTP tree to identify potential webroot directories."""
+    targets = ["/public_html"]
+    
+    def list_dir(path: str) -> list[str]:
+        items: list[str] = []
+        try:
+            ftp.cwd(path)
+            ftp.dir(items.append)
+        except Exception:
+            pass
+        return items
+
+    print("[*] Inspecting remote directories:")
+    root_items = list_dir("/")
+    for item in root_items:
+        print(f"    / -> {item}")
+        parts = item.split()
+        if len(parts) >= 9:
+            name = parts[-1]
+            if "docs" in name or "yaping" in name or "dpdns" in name:
+                targets.append(f"/{name}")
+                targets.append(f"/{name}/public_html")
+
+    pub_items = list_dir("/public_html")
+    for item in pub_items:
+        print(f"    /public_html -> {item}")
+        parts = item.split()
+        if len(parts) >= 9:
+            name = parts[-1]
+            if "docs" in name or "yaping" in name or "dpdns" in name:
+                targets.append(f"/public_html/{name}")
+
+    print(f"[*] Resolved deployment target directories: {list(set(targets))}")
+    return list(set(targets))
+
 def upload_directory(ftp: ftplib.FTP_TLS, local_dir: str, remote_dir: str) -> None:
     local_path = Path(local_dir)
     print(f"[*] Starting upload from {local_path} to {remote_dir}")
@@ -46,7 +82,6 @@ def upload_directory(ftp: ftplib.FTP_TLS, local_dir: str, remote_dir: str) -> No
         try:
             ftp.cwd(current_remote_dir)
         except ftplib.error_perm:
-            # Recursively create remote directory
             parts = current_remote_dir.strip("/").split("/")
             path_builder = ""
             for part in parts:
@@ -55,27 +90,30 @@ def upload_directory(ftp: ftplib.FTP_TLS, local_dir: str, remote_dir: str) -> No
                     ftp.mkd(path_builder)
                 except ftplib.error_perm:
                     pass
-            ftp.cwd(current_remote_dir)
-            dir_count += 1
+            try:
+                ftp.cwd(current_remote_dir)
+                dir_count += 1
+            except Exception:
+                pass
 
         # Upload files in this directory
         for filename in files:
             local_file = Path(root) / filename
             with open(local_file, "rb") as f:
                 remote_cmd = f"STOR {filename}"
-                ftp.storbinary(remote_cmd, f)
-                file_count += 1
-                if file_count % 20 == 0:
-                    print(f"    [+] Uploaded {file_count} files...")
+                try:
+                    ftp.storbinary(remote_cmd, f)
+                    file_count += 1
+                except Exception as e:
+                    print(f"    [!] Error uploading {filename} to {current_remote_dir}: {e}")
 
-    print(f"[✓] Upload complete! Total files: {file_count}, directories created: {dir_count}")
+    print(f"[✓] Upload to {remote_dir} complete! Files: {file_count}, Dirs: {dir_count}")
 
 def main() -> None:
     host = os.environ.get("FTP_HOST", "186.241.115.49")
     user = os.environ.get("FTP_USER")
     passwd = os.environ.get("FTP_PASS")
     local_dir = sys.argv[1] if len(sys.argv) > 1 else "./public"
-    remote_dir = sys.argv[2] if len(sys.argv) > 2 else "/public_html"
 
     if not user or not passwd:
         print("[!] Missing FTP_USER or FTP_PASS environment variables.")
@@ -85,14 +123,10 @@ def main() -> None:
     ftp = create_ftps_client(host, user, passwd)
     print("    [+] Authentication successful!")
 
-    # Check remote root layout
-    print("    [+] Remote root layout:")
-    lines: list[str] = []
-    ftp.dir(lines.append)
-    for l in lines[:5]:
-        print(f"        {l}")
-
-    upload_directory(ftp, local_dir, remote_dir)
+    target_dirs = find_target_directories(ftp)
+    for target in target_dirs:
+        upload_directory(ftp, local_dir, target)
+        
     ftp.quit()
 
 if __name__ == "__main__":
