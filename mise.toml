@@ -1,0 +1,24 @@
+[tools]
+go = "1.22"
+# hugo extended 由 peaceiris/actions-hugo 钉 0.165.0，本地用 mise 的 hugo 需 extended
+hugo = "0.165.0"
+python = "3.12"
+
+[settings]
+experimental = true
+
+[tasks.verify]
+description = "一键验收门禁"
+run = "bash scripts/verify.sh"
+
+[tasks.build]
+description = "生产构建（与 CI 一致）"
+run = "hugo --cleanDestinationDir --gc --minify --environment production --printPathWarnings --panicOnWarning"
+
+[tasks.loop]
+description = "全自动 loop：逐项消费 BACKLOG 直至 GOAL 全绿"
+run = "bash scripts/loop.sh"
+
+[tasks.test]
+description = "仅跑 TDD 测试套件"
+run = "bash tests/run_all.sh"
