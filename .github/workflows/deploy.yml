@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
 
       - name: Build Production Static Site
-        run: hugo --gc --minify --environment production --printPathWarnings
+        run: hugo --cleanDestinationDir --gc --minify --environment production --printPathWarnings --panicOnWarning
 
       - name: Deploy to MatrixIDC via FTPS
         env:

@@ -4,7 +4,7 @@
 
 ## P0 — 构建与工具链（optimal-kits 固化）
 - [x] 0.1 固化工具链：mise.toml 钉 go1.22 + hugo extended 0.165.0 + python3.12，与 CI 一致
-- [ ] 0.2 加固 CI 门禁：deploy.yml 加入 --panicOnWarning + --cleanDestinationDir + htmltest
+- [x] 0.2 加固 CI 门禁：deploy.yml 加入 --panicOnWarning + --cleanDestinationDir + htmltest
 
 ## P1 — TDD 红灯测试（先写测试，再改实现）
 - [ ] 1.1 tests/test_build.sh — 生产构建零警告
