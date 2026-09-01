@@ -11,10 +11,19 @@ def create_ftps_client(host: str, user: str, passwd: str) -> ftplib.FTP_TLS:
     ctx.verify_mode = ssl.CERT_NONE
 
     ftp = ftplib.FTP_TLS(context=ctx, timeout=30)
-    ftp.encoding = "latin-1"  # Handle non-UTF8 server control responses safely
+    ftp.encoding = "utf-8"
     ftp.connect(host, 21)
+    if ftp.sock is not None:
+        ftp.file = ftp.sock.makefile('r', encoding='utf-8', errors='surrogateescape')
+    
     ftp.auth()
+    if ftp.sock is not None:
+        ftp.file = ftp.sock.makefile('r', encoding='utf-8', errors='surrogateescape')
+        
     ftp.login(user, passwd)
+    if ftp.sock is not None:
+        ftp.file = ftp.sock.makefile('r', encoding='utf-8', errors='surrogateescape')
+        
     ftp.prot_p()
     ftp.set_pasv(True)
     return ftp
