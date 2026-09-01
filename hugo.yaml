@@ -1,9 +1,9 @@
 # OINK Starter — the only site configuration file.
 # Change the two marked values first; everything else builds as-is.
 
-title: &siteTitle Project Name # CHANGE ME: one shared title for every language
-baseURL: https://example.org/ # CHANGE ME: canonical production URL
-defaultContentLanguage: en
+title: &siteTitle Yaping Knowledge Base # 站点全局标题
+baseURL: https://docs.yaping.dpdns.org/ # 生产环境域名
+defaultContentLanguage: zh
 enableGitInfo: true
 enableRobotsTXT: true
 enableEmoji: true
