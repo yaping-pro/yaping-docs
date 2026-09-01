@@ -35,15 +35,22 @@ jobs:
       - name: Build Production Static Site
         run: hugo --gc --minify --environment production --printPathWarnings
 
-      - name: Deploy to MatrixIDC via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: 186.241.115.49
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          security: loose
-          port: 21
-          local-dir: ./public/
-          server-dir: ./public_html/
-          dangerous-clean-slate: false
+      - name: Deploy via LFTP (FTPS High-Speed Sync)
+        env:
+          FTP_HOST: 186.241.115.49
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq lftp
+          lftp -e "
+            set ssl:verify-certificate no;
+            set ftp:ssl-allow yes;
+            set ftp:ssl-force yes;
+            set ftp:ssl-protect-data yes;
+            set ftp:passive-mode yes;
+            set net:timeout 15;
+            set net:max-retries 3;
+            mirror -R -e -p -v --parallel=5 ./public/ ./;
+            quit
+          " -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
