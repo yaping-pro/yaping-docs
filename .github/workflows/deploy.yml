@@ -41,6 +41,9 @@ jobs:
           server: 186.241.115.49
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          security: loose
+          port: 21
           local-dir: ./public/
           server-dir: ./public_html/
           dangerous-clean-slate: false
