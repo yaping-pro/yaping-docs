@@ -1,7 +1,7 @@
 ---
 title: Welcome to the project blog
 date: 2026-01-15
-description: Replace this sample with the story behind your project.
+description: The first post on Yaping Knowledge Base — what we build and why.
 tags: [community, getting-started]
 ---
 
@@ -11,6 +11,6 @@ Use the Post section for news, explanations, and stories that do not belong in t
 
 Write for readers who want context: why the project exists, what the team learned, and what comes next.
 
-## Replace this page {#replace-this-page}
+## Yaping starts here {#yaping-starts-here}
 
-Keep the front matter, change the title and date, then write your first real post below it.
+We document homelab engineering, AI-native toolchains, and privacy-focused infrastructure. This blog carries design notes, release stories, and lessons from building in public.

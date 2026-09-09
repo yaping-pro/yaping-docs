@@ -10,7 +10,7 @@ La plupart des projets n’exigent que du contenu et deux modifications de confi
 
 ## Modifier l’identité une seule fois {#identity}
 
-En haut de `hugo.yaml`, remplacez `Project Name` et `https://example.org/`. L’ancre YAML du titre propage le nom aux trois langues.
+Le titre du site et l'URL de base se trouvent en haut de `hugo.yaml` — une ancre YAML unique propage le nom dans les trois langues.
 
 Ne remplacez `assets/icons/logo.svg` et `static/favicon.svg` que lorsque vous disposez d’une véritable identité visuelle.
 

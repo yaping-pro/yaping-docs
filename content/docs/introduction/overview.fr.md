@@ -4,7 +4,7 @@ description: Expliquer ce que fait le projet, à qui il s’adresse et pourquoi 
 weight: 10
 ---
 
-Remplacez cette page par l’explication la plus courte et utile de votre projet.
+Yaping Knowledge Base est un site de documentation trilingue (zh/en/fr) couvrant l'ingénierie de serveurs domestiques, les chaînes d'outils IA natives et les infrastructures réseau pour les builders soucieux de leur vie privée.
 
 ## Le problème {#problem}
 

@@ -1,6 +1,5 @@
 ---
-title: Make It Yours
-description: Replace the identity and sample content without rebuilding the theme.
+title: Customized Identity
 book_kind: chapter
 book_number: 3
 weight: 30
@@ -10,7 +9,7 @@ Most projects need only content changes and two configuration edits.
 
 ## Change identity once {#identity}
 
-At the top of `hugo.yaml`, replace `Project Name` and `https://example.org/`. The YAML title anchor carries the name into all three languages.
+The site title and base URL live at the top of `hugo.yaml` — a single YAML anchor propagates the name into all three languages.
 
 Replace `assets/icons/logo.svg` and `static/favicon.svg` only when you have real project artwork.
 

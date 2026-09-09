@@ -4,7 +4,7 @@ description: State what the project does, who it serves, and why it exists.
 weight: 10
 ---
 
-Replace this page with the shortest useful explanation of your project.
+Yaping Knowledge Base is a trilingual (zh/en/fr) documentation site covering self-hosted homelab engineering, AI-native toolchains, and network infrastructure for privacy-conscious builders.
 
 ## The problem {#problem}
 

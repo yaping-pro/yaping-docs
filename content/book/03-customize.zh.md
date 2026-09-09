@@ -10,7 +10,7 @@ weight: 30
 
 ## 只修改一次身份 {#identity}
 
-在 `hugo.yaml` 顶部替换 `Project Name` 与 `https://example.org/`。YAML 标题锚点会把名称带入三种语言。
+站点标题与 baseURL 配置在 `hugo.yaml` 顶部——一个 YAML 锚点会将名称同步到三种语言。
 
 只有在已有正式项目图形时，才替换 `assets/icons/logo.svg` 与 `static/favicon.svg`。
 
