@@ -2,7 +2,7 @@
 # Change the two marked values first; everything else builds as-is.
 
 title: &siteTitle Yaping Knowledge Base # 站点全局标题
-baseURL: https://mayaping.me/ # 生产环境域名
+baseURL: https://docs.yaping.dpdns.org/ # 生产环境域名
 defaultContentLanguage: zh
 defaultContentLanguageInSubdir: false
 enableGitInfo: true
